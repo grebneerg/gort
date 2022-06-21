@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package postgres
+package sql
 
 import (
 	"context"
@@ -29,9 +29,9 @@ import (
 	"go.opentelemetry.io/otel"
 )
 
-func (da PostgresDataAccess) RequestBegin(ctx context.Context, req *data.CommandRequest) error {
+func (da SqlDataAccess) RequestBegin(ctx context.Context, req *data.CommandRequest) error {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.RequestBegin")
+	ctx, sp := tr.Start(ctx, "sql.RequestBegin")
 	defer sp.End()
 
 	if req.RequestID != 0 {
@@ -75,17 +75,17 @@ func (da PostgresDataAccess) RequestBegin(ctx context.Context, req *data.Command
 	return nil
 }
 
-func (da PostgresDataAccess) RequestError(ctx context.Context, req data.CommandRequest, err error) error {
+func (da SqlDataAccess) RequestError(ctx context.Context, req data.CommandRequest, err error) error {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	_, sp := tr.Start(ctx, "postgres.RequestUpdate")
+	_, sp := tr.Start(ctx, "sql.RequestUpdate")
 	defer sp.End()
 
 	return da.RequestClose(ctx, data.NewCommandResponseEnvelope(req, data.WithError("", err, 1)))
 }
 
-func (da PostgresDataAccess) RequestUpdate(ctx context.Context, req data.CommandRequest) error {
+func (da SqlDataAccess) RequestUpdate(ctx context.Context, req data.CommandRequest) error {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.RequestUpdate")
+	ctx, sp := tr.Start(ctx, "sql.RequestUpdate")
 	defer sp.End()
 
 	if req.RequestID == 0 {
@@ -123,9 +123,9 @@ func (da PostgresDataAccess) RequestUpdate(ctx context.Context, req data.Command
 	return err
 }
 
-func (da PostgresDataAccess) RequestClose(ctx context.Context, envelope data.CommandResponseEnvelope) error {
+func (da SqlDataAccess) RequestClose(ctx context.Context, envelope data.CommandResponseEnvelope) error {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.RequestClose")
+	ctx, sp := tr.Start(ctx, "sql.RequestClose")
 	defer sp.End()
 
 	if envelope.Request.RequestID == 0 {
@@ -173,7 +173,7 @@ func (da PostgresDataAccess) RequestClose(ctx context.Context, envelope data.Com
 	return err
 }
 
-func (da PostgresDataAccess) createCommandsTable(ctx context.Context, conn *sql.Conn) error {
+func (da SqlDataAccess) createCommandsTable(ctx context.Context, conn *sql.Conn) error {
 	createCommandsQuery := `CREATE TABLE commands(
 		request_id          BIGSERIAL,
 		timestamp           TIMESTAMP WITH TIME ZONE,

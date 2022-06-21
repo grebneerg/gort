@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package postgres
+package sql
 
 import (
 	"context"
@@ -28,9 +28,9 @@ import (
 	"github.com/getgort/gort/telemetry"
 )
 
-func (da PostgresDataAccess) DynamicConfigurationCreate(ctx context.Context, dc data.DynamicConfiguration) error {
+func (da SqlDataAccess) DynamicConfigurationCreate(ctx context.Context, dc data.DynamicConfiguration) error {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.DynamicConfigurationCreate")
+	ctx, sp := tr.Start(ctx, "sql.DynamicConfigurationCreate")
 	defer sp.End()
 
 	if err := validate(dc.Layer, dc.Bundle, dc.Owner, dc.Key); err != nil {
@@ -60,9 +60,9 @@ func (da PostgresDataAccess) DynamicConfigurationCreate(ctx context.Context, dc 
 	return nil
 }
 
-func (da PostgresDataAccess) DynamicConfigurationDelete(ctx context.Context, layer data.ConfigurationLayer, bundle, owner, key string) error {
+func (da SqlDataAccess) DynamicConfigurationDelete(ctx context.Context, layer data.ConfigurationLayer, bundle, owner, key string) error {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.DynamicConfigurationDelete")
+	ctx, sp := tr.Start(ctx, "sql.DynamicConfigurationDelete")
 	defer sp.End()
 
 	if err := validate(layer, bundle, owner, key); err != nil {
@@ -90,9 +90,9 @@ func (da PostgresDataAccess) DynamicConfigurationDelete(ctx context.Context, lay
 	return err
 }
 
-func (da PostgresDataAccess) DynamicConfigurationExists(ctx context.Context, layer data.ConfigurationLayer, bundle, owner, key string) (bool, error) {
+func (da SqlDataAccess) DynamicConfigurationExists(ctx context.Context, layer data.ConfigurationLayer, bundle, owner, key string) (bool, error) {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.DynamicConfigurationExists")
+	ctx, sp := tr.Start(ctx, "sql.DynamicConfigurationExists")
 	defer sp.End()
 
 	if err := validate(layer, bundle, owner, key); err != nil {
@@ -116,9 +116,9 @@ func (da PostgresDataAccess) DynamicConfigurationExists(ctx context.Context, lay
 	return exists, nil
 }
 
-func (da PostgresDataAccess) DynamicConfigurationGet(ctx context.Context, layer data.ConfigurationLayer, bundle, owner, key string) (data.DynamicConfiguration, error) {
+func (da SqlDataAccess) DynamicConfigurationGet(ctx context.Context, layer data.ConfigurationLayer, bundle, owner, key string) (data.DynamicConfiguration, error) {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.DynamicConfigurationGet")
+	ctx, sp := tr.Start(ctx, "sql.DynamicConfigurationGet")
 	defer sp.End()
 
 	if err := validate(layer, bundle, owner, key); err != nil {
@@ -154,9 +154,9 @@ func (da PostgresDataAccess) DynamicConfigurationGet(ctx context.Context, layer 
 	return dc, nil
 }
 
-func (da PostgresDataAccess) DynamicConfigurationList(ctx context.Context, layer data.ConfigurationLayer, bundle, owner, key string) ([]data.DynamicConfiguration, error) {
+func (da SqlDataAccess) DynamicConfigurationList(ctx context.Context, layer data.ConfigurationLayer, bundle, owner, key string) ([]data.DynamicConfiguration, error) {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.DynamicConfigurationList")
+	ctx, sp := tr.Start(ctx, "sql.DynamicConfigurationList")
 	defer sp.End()
 
 	if bundle == "" {

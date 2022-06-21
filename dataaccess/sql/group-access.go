@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package postgres
+package sql
 
 import (
 	"context"
@@ -30,9 +30,9 @@ import (
 )
 
 // GroupCreate creates a new user group.
-func (da PostgresDataAccess) GroupCreate(ctx context.Context, group rest.Group) error {
+func (da SqlDataAccess) GroupCreate(ctx context.Context, group rest.Group) error {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.GroupCreate")
+	ctx, sp := tr.Start(ctx, "sql.GroupCreate")
 	defer sp.End()
 
 	if group.Name == "" {
@@ -63,9 +63,9 @@ func (da PostgresDataAccess) GroupCreate(ctx context.Context, group rest.Group) 
 }
 
 // GroupDelete deletes a group.
-func (da PostgresDataAccess) GroupDelete(ctx context.Context, groupname string) error {
+func (da SqlDataAccess) GroupDelete(ctx context.Context, groupname string) error {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.GroupDelete")
+	ctx, sp := tr.Start(ctx, "sql.GroupDelete")
 	defer sp.End()
 
 	if groupname == "" {
@@ -107,9 +107,9 @@ func (da PostgresDataAccess) GroupDelete(ctx context.Context, groupname string) 
 }
 
 // GroupExists is used to determine whether a group exists in the data store.
-func (da PostgresDataAccess) GroupExists(ctx context.Context, groupname string) (bool, error) {
+func (da SqlDataAccess) GroupExists(ctx context.Context, groupname string) (bool, error) {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.GroupExists")
+	ctx, sp := tr.Start(ctx, "sql.GroupExists")
 	defer sp.End()
 
 	conn, err := da.connect(ctx)
@@ -130,9 +130,9 @@ func (da PostgresDataAccess) GroupExists(ctx context.Context, groupname string) 
 }
 
 // GroupGet gets a specific group.
-func (da PostgresDataAccess) GroupGet(ctx context.Context, groupname string) (rest.Group, error) {
+func (da SqlDataAccess) GroupGet(ctx context.Context, groupname string) (rest.Group, error) {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.GroupGet")
+	ctx, sp := tr.Start(ctx, "sql.GroupGet")
 	defer sp.End()
 
 	if groupname == "" {
@@ -170,9 +170,9 @@ func (da PostgresDataAccess) GroupGet(ctx context.Context, groupname string) (re
 
 // GroupList returns a list of all known groups in the datastore.
 // Passwords are not included. Nice try.
-func (da PostgresDataAccess) GroupList(ctx context.Context) ([]rest.Group, error) {
+func (da SqlDataAccess) GroupList(ctx context.Context) ([]rest.Group, error) {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.GroupList")
+	ctx, sp := tr.Start(ctx, "sql.GroupList")
 	defer sp.End()
 
 	groups := make([]rest.Group, 0)
@@ -207,9 +207,9 @@ func (da PostgresDataAccess) GroupList(ctx context.Context) ([]rest.Group, error
 	return groups, nil
 }
 
-func (da PostgresDataAccess) GroupPermissionList(ctx context.Context, groupname string) (rest.RolePermissionList, error) {
+func (da SqlDataAccess) GroupPermissionList(ctx context.Context, groupname string) (rest.RolePermissionList, error) {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.GroupPermissionList")
+	ctx, sp := tr.Start(ctx, "sql.GroupPermissionList")
 	defer sp.End()
 
 	roles, err := da.GroupRoleList(ctx, groupname)
@@ -242,9 +242,9 @@ func (da PostgresDataAccess) GroupPermissionList(ctx context.Context, groupname 
 }
 
 // GroupRoleAdd grants one or more roles to a group.
-func (da PostgresDataAccess) GroupRoleAdd(ctx context.Context, groupname, rolename string) error {
+func (da SqlDataAccess) GroupRoleAdd(ctx context.Context, groupname, rolename string) error {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.GroupRoleAdd")
+	ctx, sp := tr.Start(ctx, "sql.GroupRoleAdd")
 	defer sp.End()
 
 	if rolename == "" {
@@ -284,9 +284,9 @@ func (da PostgresDataAccess) GroupRoleAdd(ctx context.Context, groupname, rolena
 }
 
 // GroupRoleDelete revokes a role from a group.
-func (da PostgresDataAccess) GroupRoleDelete(ctx context.Context, groupname, rolename string) error {
+func (da SqlDataAccess) GroupRoleDelete(ctx context.Context, groupname, rolename string) error {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.GroupRoleDelete")
+	ctx, sp := tr.Start(ctx, "sql.GroupRoleDelete")
 	defer sp.End()
 
 	if groupname == "" {
@@ -313,9 +313,9 @@ func (da PostgresDataAccess) GroupRoleDelete(ctx context.Context, groupname, rol
 	return err
 }
 
-func (da PostgresDataAccess) GroupRoleList(ctx context.Context, groupname string) ([]rest.Role, error) {
+func (da SqlDataAccess) GroupRoleList(ctx context.Context, groupname string) ([]rest.Role, error) {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.GroupRoleList")
+	ctx, sp := tr.Start(ctx, "sql.GroupRoleList")
 	defer sp.End()
 
 	if groupname == "" {
@@ -370,9 +370,9 @@ func (da PostgresDataAccess) GroupRoleList(ctx context.Context, groupname string
 // GroupUpdate is used to update an existing group. An error is returned if the
 // groupname is empty or if the group doesn't exist.
 // TODO Should we let this create groups that don't exist?
-func (da PostgresDataAccess) GroupUpdate(ctx context.Context, group rest.Group) error {
+func (da SqlDataAccess) GroupUpdate(ctx context.Context, group rest.Group) error {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.GroupUpdate")
+	ctx, sp := tr.Start(ctx, "sql.GroupUpdate")
 	defer sp.End()
 
 	if group.Name == "" {
@@ -407,9 +407,9 @@ func (da PostgresDataAccess) GroupUpdate(ctx context.Context, group rest.Group) 
 }
 
 // GroupUserAdd adds a user to a group
-func (da PostgresDataAccess) GroupUserAdd(ctx context.Context, groupname string, username string) error {
+func (da SqlDataAccess) GroupUserAdd(ctx context.Context, groupname string, username string) error {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.GroupUserAdd")
+	ctx, sp := tr.Start(ctx, "sql.GroupUserAdd")
 	defer sp.End()
 
 	if groupname == "" {
@@ -452,9 +452,9 @@ func (da PostgresDataAccess) GroupUserAdd(ctx context.Context, groupname string,
 }
 
 // GroupUserDelete removes a user from a group.
-func (da PostgresDataAccess) GroupUserDelete(ctx context.Context, groupname string, username string) error {
+func (da SqlDataAccess) GroupUserDelete(ctx context.Context, groupname string, username string) error {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.GroupUserDelete")
+	ctx, sp := tr.Start(ctx, "sql.GroupUserDelete")
 	defer sp.End()
 
 	if groupname == "" {
@@ -485,9 +485,9 @@ func (da PostgresDataAccess) GroupUserDelete(ctx context.Context, groupname stri
 }
 
 // GroupUserList returns a list of all known users in a group.
-func (da PostgresDataAccess) GroupUserList(ctx context.Context, groupname string) ([]rest.User, error) {
+func (da SqlDataAccess) GroupUserList(ctx context.Context, groupname string) ([]rest.User, error) {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.GroupUserList")
+	ctx, sp := tr.Start(ctx, "sql.GroupUserList")
 	defer sp.End()
 
 	users := make([]rest.User, 0)

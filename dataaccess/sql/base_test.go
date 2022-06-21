@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package postgres
+package sql
 
 import (
 	"context"
@@ -22,6 +22,7 @@ import (
 	"io"
 	"math/rand"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -44,11 +45,13 @@ var (
 		Port:       10864,
 		SSLEnabled: false,
 		User:       "gort",
+		//ConnectionMaxLifetime: time.Minute * 4,
+		//ConnectionMaxIdleTime: 0,
 	}
 
 	ctx    context.Context
 	cancel context.CancelFunc
-	da     PostgresDataAccess
+	da     SqlDataAccess
 )
 
 // If true, the test database container won't be automatically shut down and
@@ -62,7 +65,7 @@ func TestPostgresDataAccessMain(t *testing.T) {
 		t.Skip("skipping test in short mode.")
 	}
 
-	cleanup, err := startDatabaseContainer(ctx, t)
+	cleanup, err := startPostgresDatabaseContainer(ctx, t)
 	defer func() {
 		if DoNotCleanUpDatabase {
 			return
@@ -74,6 +77,8 @@ func TestPostgresDataAccessMain(t *testing.T) {
 	ctx, cancel = context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 
+	da = NewPostgresDataAccess(configs)
+
 	t.Run("testInitialize", testInitialize)
 
 	t.Run("testConnectionLeaks", testConnectionLeaks)
@@ -82,7 +87,36 @@ func TestPostgresDataAccessMain(t *testing.T) {
 	t.Run("RunAllTests", dat.RunAllTests)
 }
 
-func startDatabaseContainer(ctx context.Context, t *testing.T) (func(), error) {
+func TestMySQLDataAccessMain(t *testing.T) {
+	ctx = context.Background()
+
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
+
+	cleanup, err := startMySQLDatabaseContainer(ctx, t)
+	defer func() {
+		if DoNotCleanUpDatabase {
+			return
+		}
+		cleanup()
+	}()
+	require.NoError(t, err, "failed to start database container")
+
+	ctx, cancel = context.WithTimeout(ctx, time.Minute)
+	defer cancel()
+
+	da = NewMySQLDatAccess(configs)
+
+	t.Run("testInitialize", testInitialize)
+
+	t.Run("testConnectionLeaks", testConnectionLeaks)
+
+	dat := tests.NewDataAccessTester(ctx, cancel, da)
+	t.Run("RunAllTests", dat.RunAllTests)
+}
+
+func startPostgresDatabaseContainer(ctx context.Context, t *testing.T) (func(), error) {
 	ctx2, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 
@@ -106,8 +140,8 @@ func startDatabaseContainer(ctx context.Context, t *testing.T) (func(), error) {
 			Image:        "postgres:14",
 			ExposedPorts: nat.PortSet{"5432/tcp": {}},
 			Env: []string{
-				"POSTGRES_USER=gort",
-				"POSTGRES_PASSWORD=password",
+				"POSTGRES_USER=gort",         // + configs.User,
+				"POSTGRES_PASSWORD=password", // + configs.Password,
 			},
 			Cmd: []string{"postgres"},
 		},
@@ -143,10 +177,71 @@ func startDatabaseContainer(ctx context.Context, t *testing.T) (func(), error) {
 	return cleanup, nil
 }
 
+func startMySQLDatabaseContainer(ctx context.Context, t *testing.T) (func(), error) {
+	ctx2, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
+
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		return func() {}, err
+	}
+
+	reader, err := cli.ImagePull(ctx2, "docker.io/library/mysql:8", types.ImagePullOptions{})
+	if err != nil {
+		return func() {}, err
+	}
+	io.Copy(os.Stdout, reader)
+
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	containerName := fmt.Sprintf("gort-test-%x", r.Int())
+
+	resp, err := cli.ContainerCreate(
+		ctx2,
+		&container.Config{
+			Image:        "mysql:8",
+			ExposedPorts: nat.PortSet{"3306/tcp": {}},
+			Env: []string{
+				"MYSQL_USER=" + configs.User,
+				"MYSQL_PASSWORD=" + configs.Password,
+				"MYSQL_ROOT_PASSWORD=" + configs.Password,
+				"MYSQL_DATABASE=gort",
+			},
+		},
+		&container.HostConfig{
+			PortBindings: map[nat.Port][]nat.PortBinding{"3306/tcp": {nat.PortBinding{HostPort: strconv.Itoa(configs.Port) + "/tcp"}}},
+		},
+		nil, nil, containerName)
+	if err != nil {
+		return func() {}, err
+	}
+
+	cleanup := func() {
+		ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+		defer cancel()
+
+		id := resp.ID
+
+		if err := cli.ContainerStop(ctx, id, nil); err != nil {
+			t.Log("warning: failed to stop test container: ", err)
+		}
+
+		if err := cli.ContainerRemove(ctx, id, types.ContainerRemoveOptions{}); err != nil {
+			t.Log("warning: failed to remove test container: ", err)
+		} else {
+			t.Log("container", id[:12], "cleaned up successfully")
+		}
+	}
+
+	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
+		return cleanup, err
+	}
+
+	return cleanup, nil
+}
+
 func testInitialize(t *testing.T) {
 	const timeout = 30 * time.Second
 	timeoutAt := time.Now().Add(timeout)
-	da = NewPostgresDataAccess(configs)
 
 	t.Log("Waiting for database to be ready")
 
@@ -157,7 +252,7 @@ loop:
 			t.FailNow()
 		}
 
-		db, err := da.open(ctx, "postgres")
+		db, err := da.open(ctx, "gort")
 		switch {
 		case err != nil:
 			t.Logf("connecting to database: %v", err)
@@ -203,8 +298,6 @@ func testConnectionLeaks(t *testing.T) {
 }
 
 func testDatabaseExists(t *testing.T) {
-	da = NewPostgresDataAccess(configs)
-
 	err := da.Initialize(ctx)
 	assert.NoError(t, err)
 
@@ -230,13 +323,13 @@ func testTablesExist(t *testing.T) {
 
 	// Expects these tables
 	for _, table := range expectedTables {
-		b, err := da.tableExists(ctx, table, conn)
+		b, err := da._manager.TableExists(ctx, table, conn)
 		assert.NoError(t, err)
 		assert.True(t, b)
 	}
 
 	// Expect not to find this one.
-	b, err := da.tableExists(ctx, "doestexist", conn)
+	b, err := da._manager.TableExists(ctx, "doestexist", conn)
 	assert.NoError(t, err)
 	assert.False(t, b)
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package postgres
+package sql
 
 import (
 	"context"
@@ -30,9 +30,9 @@ import (
 )
 
 // RoleCreate creates a new role.
-func (da PostgresDataAccess) RoleCreate(ctx context.Context, name string) error {
+func (da SqlDataAccess) RoleCreate(ctx context.Context, name string) error {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.RoleCreate")
+	ctx, sp := tr.Start(ctx, "sql.RoleCreate")
 	defer sp.End()
 
 	if name == "" {
@@ -63,9 +63,9 @@ func (da PostgresDataAccess) RoleCreate(ctx context.Context, name string) error 
 }
 
 // RoleDelete
-func (da PostgresDataAccess) RoleDelete(ctx context.Context, name string) error {
+func (da SqlDataAccess) RoleDelete(ctx context.Context, name string) error {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.RoleDelete")
+	ctx, sp := tr.Start(ctx, "sql.RoleDelete")
 	defer sp.End()
 
 	if name == "" {
@@ -107,9 +107,9 @@ func (da PostgresDataAccess) RoleDelete(ctx context.Context, name string) error 
 }
 
 // RoleExists is used to determine whether a group exists in the data store.
-func (da PostgresDataAccess) RoleExists(ctx context.Context, rolename string) (bool, error) {
+func (da SqlDataAccess) RoleExists(ctx context.Context, rolename string) (bool, error) {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.RoleExists")
+	ctx, sp := tr.Start(ctx, "sql.RoleExists")
 	defer sp.End()
 
 	conn, err := da.connect(ctx)
@@ -130,9 +130,9 @@ func (da PostgresDataAccess) RoleExists(ctx context.Context, rolename string) (b
 }
 
 // RoleGet gets a specific group.
-func (da PostgresDataAccess) RoleGet(ctx context.Context, name string) (rest.Role, error) {
+func (da SqlDataAccess) RoleGet(ctx context.Context, name string) (rest.Role, error) {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.RoleGet")
+	ctx, sp := tr.Start(ctx, "sql.RoleGet")
 	defer sp.End()
 
 	if name == "" {
@@ -166,25 +166,25 @@ func (da PostgresDataAccess) RoleGet(ctx context.Context, name string) (rest.Rol
 	return role, nil
 }
 
-func (da PostgresDataAccess) RoleGroupAdd(ctx context.Context, rolename, groupname string) error {
+func (da SqlDataAccess) RoleGroupAdd(ctx context.Context, rolename, groupname string) error {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.RoleGroupAdd")
+	ctx, sp := tr.Start(ctx, "sql.RoleGroupAdd")
 	defer sp.End()
 
 	return da.GroupRoleAdd(ctx, groupname, rolename)
 }
 
-func (da PostgresDataAccess) RoleGroupDelete(ctx context.Context, rolename, groupname string) error {
+func (da SqlDataAccess) RoleGroupDelete(ctx context.Context, rolename, groupname string) error {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.RoleGroupDelete")
+	ctx, sp := tr.Start(ctx, "sql.RoleGroupDelete")
 	defer sp.End()
 
 	return da.GroupRoleDelete(ctx, groupname, rolename)
 }
 
-func (da PostgresDataAccess) RoleGroupExists(ctx context.Context, rolename, groupname string) (bool, error) {
+func (da SqlDataAccess) RoleGroupExists(ctx context.Context, rolename, groupname string) (bool, error) {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.RoleGroupExists")
+	ctx, sp := tr.Start(ctx, "sql.RoleGroupExists")
 	defer sp.End()
 
 	groups, err := da.RoleGroupList(ctx, rolename)
@@ -207,9 +207,9 @@ func (da PostgresDataAccess) RoleGroupExists(ctx context.Context, rolename, grou
 	return false, nil
 }
 
-func (da PostgresDataAccess) RoleGroupList(ctx context.Context, rolename string) ([]rest.Group, error) {
+func (da SqlDataAccess) RoleGroupList(ctx context.Context, rolename string) ([]rest.Group, error) {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.RoleGroupList")
+	ctx, sp := tr.Start(ctx, "sql.RoleGroupList")
 	defer sp.End()
 
 	if rolename == "" {
@@ -262,9 +262,9 @@ func (da PostgresDataAccess) RoleGroupList(ctx context.Context, rolename string)
 }
 
 // RoleList gets all roles.
-func (da PostgresDataAccess) RoleList(ctx context.Context) ([]rest.Role, error) {
+func (da SqlDataAccess) RoleList(ctx context.Context) ([]rest.Role, error) {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.RoleList")
+	ctx, sp := tr.Start(ctx, "sql.RoleList")
 	defer sp.End()
 
 	conn, err := da.connect(ctx)
@@ -320,9 +320,9 @@ func (da PostgresDataAccess) RoleList(ctx context.Context) ([]rest.Role, error) 
 	return roles, nil
 }
 
-func (da PostgresDataAccess) RolePermissionAdd(ctx context.Context, rolename, bundle, permission string) error {
+func (da SqlDataAccess) RolePermissionAdd(ctx context.Context, rolename, bundle, permission string) error {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.RolePermissionAdd")
+	ctx, sp := tr.Start(ctx, "sql.RolePermissionAdd")
 	defer sp.End()
 
 	if rolename == "" {
@@ -361,9 +361,9 @@ func (da PostgresDataAccess) RolePermissionAdd(ctx context.Context, rolename, bu
 	return err
 }
 
-func (da PostgresDataAccess) RolePermissionDelete(ctx context.Context, rolename, bundle, permission string) error {
+func (da SqlDataAccess) RolePermissionDelete(ctx context.Context, rolename, bundle, permission string) error {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.RolePermissionDelete")
+	ctx, sp := tr.Start(ctx, "sql.RolePermissionDelete")
 	defer sp.End()
 
 	if rolename == "" {
@@ -397,7 +397,7 @@ func (da PostgresDataAccess) RolePermissionDelete(ctx context.Context, rolename,
 // RolePermissionExists returns true if the given role has been granted the
 // specified permission. It returns an error if rolename is empty or if no
 // such role exists.
-func (da PostgresDataAccess) RolePermissionExists(ctx context.Context, rolename, bundlename, permission string) (bool, error) {
+func (da SqlDataAccess) RolePermissionExists(ctx context.Context, rolename, bundlename, permission string) (bool, error) {
 	// TODO Make this more efficient.
 
 	perms, err := da.RolePermissionList(ctx, rolename)
@@ -417,7 +417,7 @@ func (da PostgresDataAccess) RolePermissionExists(ctx context.Context, rolename,
 // RolePermissionList returns returns an alphabetically-sorted list of
 // fully-qualified (i.e., "bundle:permission") permissions granted to
 // the role.
-func (da PostgresDataAccess) RolePermissionList(ctx context.Context, rolename string) (rest.RolePermissionList, error) {
+func (da SqlDataAccess) RolePermissionList(ctx context.Context, rolename string) (rest.RolePermissionList, error) {
 	// TODO Make this more efficient.
 
 	role, err := da.RoleGet(ctx, rolename)
@@ -432,9 +432,9 @@ func (da PostgresDataAccess) RolePermissionList(ctx context.Context, rolename st
 	return perms, nil
 }
 
-func (da PostgresDataAccess) doGetRolePermissions(ctx context.Context, name string) (rest.RolePermissionList, error) {
+func (da SqlDataAccess) doGetRolePermissions(ctx context.Context, name string) (rest.RolePermissionList, error) {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.doGetRolePermissions")
+	ctx, sp := tr.Start(ctx, "sql.doGetRolePermissions")
 	defer sp.End()
 
 	perms := make([]rest.RolePermission, 0)

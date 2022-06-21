@@ -24,7 +24,7 @@ import (
 
 	"github.com/getgort/gort/config"
 	"github.com/getgort/gort/dataaccess/memory"
-	"github.com/getgort/gort/dataaccess/postgres"
+	"github.com/getgort/gort/dataaccess/sql"
 )
 
 func init() {
@@ -47,6 +47,6 @@ func TestUsePostgres(t *testing.T) {
 	assert.NoError(t, err)
 
 	da := getCorrectDataAccess()
-	expected := postgres.NewPostgresDataAccess(config.GetDatabaseConfigs())
+	expected := sql.NewSqlDataAccess(config.GetDatabaseConfigs())
 	assert.IsType(t, expected, da)
 }

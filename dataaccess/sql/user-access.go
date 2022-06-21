@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package postgres
+package sql
 
 import (
 	"context"
@@ -30,9 +30,9 @@ import (
 )
 
 // UserAuthenticate authenticates a username/password combination.
-func (da PostgresDataAccess) UserAuthenticate(ctx context.Context, username string, password string) (bool, error) {
+func (da SqlDataAccess) UserAuthenticate(ctx context.Context, username string, password string) (bool, error) {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.UserAuthenticate")
+	ctx, sp := tr.Start(ctx, "sql.UserAuthenticate")
 	defer sp.End()
 
 	exists, err := da.UserExists(ctx, username)
@@ -64,9 +64,9 @@ func (da PostgresDataAccess) UserAuthenticate(ctx context.Context, username stri
 
 // UserCreate is used to create a new Gort user in the data store. An error is
 // returned if the username is empty or if a user already exists.
-func (da PostgresDataAccess) UserCreate(ctx context.Context, user rest.User) error {
+func (da SqlDataAccess) UserCreate(ctx context.Context, user rest.User) error {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.UserCreate")
+	ctx, sp := tr.Start(ctx, "sql.UserCreate")
 	defer sp.End()
 
 	if user.Username == "" {
@@ -110,9 +110,9 @@ func (da PostgresDataAccess) UserCreate(ctx context.Context, user rest.User) err
 // UserDelete deletes an existing user from the data store. An error is
 // returned if the username parameter is empty or if the user doesn't
 // exist.
-func (da PostgresDataAccess) UserDelete(ctx context.Context, username string) error {
+func (da SqlDataAccess) UserDelete(ctx context.Context, username string) error {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.UserDelete")
+	ctx, sp := tr.Start(ctx, "sql.UserDelete")
 	defer sp.End()
 
 	if username == "" {
@@ -161,9 +161,9 @@ func (da PostgresDataAccess) UserDelete(ctx context.Context, username string) er
 
 // UserExists is used to determine whether a Gort user with the given username
 // exists in the data store.
-func (da PostgresDataAccess) UserExists(ctx context.Context, username string) (bool, error) {
+func (da SqlDataAccess) UserExists(ctx context.Context, username string) (bool, error) {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.UserExists")
+	ctx, sp := tr.Start(ctx, "sql.UserExists")
 	defer sp.End()
 
 	conn, err := da.connect(ctx)
@@ -185,9 +185,9 @@ func (da PostgresDataAccess) UserExists(ctx context.Context, username string) (b
 
 // UserGet returns a user from the data store. An error is returned if the
 // username parameter is empty or if the user doesn't exist.
-func (da PostgresDataAccess) UserGet(ctx context.Context, username string) (rest.User, error) {
+func (da SqlDataAccess) UserGet(ctx context.Context, username string) (rest.User, error) {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.UserGet")
+	ctx, sp := tr.Start(ctx, "sql.UserGet")
 	defer sp.End()
 
 	if username == "" {
@@ -223,9 +223,9 @@ func (da PostgresDataAccess) UserGet(ctx context.Context, username string) (rest
 
 // UserGetByEmail returns a user from the data store. An error is returned if
 // the email parameter is empty or if the user doesn't exist.
-func (da PostgresDataAccess) UserGetByEmail(ctx context.Context, email string) (rest.User, error) {
+func (da SqlDataAccess) UserGetByEmail(ctx context.Context, email string) (rest.User, error) {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.UserGetByEmail")
+	ctx, sp := tr.Start(ctx, "sql.UserGetByEmail")
 	defer sp.End()
 
 	if email == "" {
@@ -260,9 +260,9 @@ func (da PostgresDataAccess) UserGetByEmail(ctx context.Context, email string) (
 
 // UserGetByID returns a user from the data store. An error is returned if
 // eitherparameter is empty or if the user doesn't exist.
-func (da PostgresDataAccess) UserGetByID(ctx context.Context, adapter, id string) (rest.User, error) {
+func (da SqlDataAccess) UserGetByID(ctx context.Context, adapter, id string) (rest.User, error) {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.UserGetByID")
+	ctx, sp := tr.Start(ctx, "sql.UserGetByID")
 	defer sp.End()
 
 	if adapter == "" {
@@ -297,9 +297,9 @@ func (da PostgresDataAccess) UserGetByID(ctx context.Context, adapter, id string
 
 // UserGroupList returns a slice of Group values representing the specified user's group memberships.
 // The groups' Users slice is never populated, and is always nil.
-func (da PostgresDataAccess) UserGroupList(ctx context.Context, username string) ([]rest.Group, error) {
+func (da SqlDataAccess) UserGroupList(ctx context.Context, username string) ([]rest.Group, error) {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.UserGroupList")
+	ctx, sp := tr.Start(ctx, "sql.UserGroupList")
 	defer sp.End()
 
 	groups := make([]rest.Group, 0)
@@ -335,9 +335,9 @@ func (da PostgresDataAccess) UserGroupList(ctx context.Context, username string)
 }
 
 // UserGroupAdd comments TBD
-func (da PostgresDataAccess) UserGroupAdd(ctx context.Context, username string, groupname string) error {
+func (da SqlDataAccess) UserGroupAdd(ctx context.Context, username string, groupname string) error {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.UserGroupAdd")
+	ctx, sp := tr.Start(ctx, "sql.UserGroupAdd")
 	defer sp.End()
 
 	if username == "" {
@@ -383,9 +383,9 @@ func (da PostgresDataAccess) UserGroupAdd(ctx context.Context, username string, 
 }
 
 // UserGroupDelete comments TBD
-func (da PostgresDataAccess) UserGroupDelete(ctx context.Context, username string, groupname string) error {
+func (da SqlDataAccess) UserGroupDelete(ctx context.Context, username string, groupname string) error {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.UserGroupDelete")
+	ctx, sp := tr.Start(ctx, "sql.UserGroupDelete")
 	defer sp.End()
 
 	if username == "" {
@@ -430,9 +430,9 @@ func (da PostgresDataAccess) UserGroupDelete(ctx context.Context, username strin
 
 // UserList returns a list of all known users in the datastore.
 // Passwords are not included. Nice try.
-func (da PostgresDataAccess) UserList(ctx context.Context) ([]rest.User, error) {
+func (da SqlDataAccess) UserList(ctx context.Context) ([]rest.User, error) {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.UserList")
+	ctx, sp := tr.Start(ctx, "sql.UserList")
 	defer sp.End()
 
 	conn, err := da.connect(ctx)
@@ -468,11 +468,11 @@ func (da PostgresDataAccess) UserList(ctx context.Context) ([]rest.User, error) 
 
 // UserPermissionList returns an alphabetically-sorted list of permissions
 // available to the specified user.
-func (da PostgresDataAccess) UserPermissionList(ctx context.Context, username string) (rest.RolePermissionList, error) {
+func (da SqlDataAccess) UserPermissionList(ctx context.Context, username string) (rest.RolePermissionList, error) {
 	// TODO This is HORRIBLY inefficient -- use a real SQL query instead!
 
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.UserPermissionList")
+	ctx, sp := tr.Start(ctx, "sql.UserPermissionList")
 	defer sp.End()
 
 	pp := []rest.RolePermission{}
@@ -508,7 +508,7 @@ func (da PostgresDataAccess) UserPermissionList(ctx context.Context, username st
 // UserRoleList returns a slice of Role values representing the specified
 // user's indirect roles (indirect because users are members of groups,
 // and groups have roles).
-func (da PostgresDataAccess) UserRoleList(ctx context.Context, username string) ([]rest.Role, error) {
+func (da SqlDataAccess) UserRoleList(ctx context.Context, username string) ([]rest.Role, error) {
 	rm := map[string]rest.Role{}
 
 	groups, err := da.UserGroupList(ctx, username)
@@ -540,9 +540,9 @@ func (da PostgresDataAccess) UserRoleList(ctx context.Context, username string) 
 
 // UserUpdate is used to update an existing user. An error is returned if the
 // username is empty or if the user doesn't exist.
-func (da PostgresDataAccess) UserUpdate(ctx context.Context, user rest.User) error {
+func (da SqlDataAccess) UserUpdate(ctx context.Context, user rest.User) error {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.UserUpdate")
+	ctx, sp := tr.Start(ctx, "sql.UserUpdate")
 	defer sp.End()
 
 	if user.Username == "" {
@@ -608,9 +608,9 @@ func (da PostgresDataAccess) UserUpdate(ctx context.Context, user rest.User) err
 
 // doUserGetAdapterIDs retrieves any adapter ID mappings associated with the
 // user. If none are found, an emptry map is returned.
-func (da PostgresDataAccess) doUserGetAdapterIDs(ctx context.Context, username string) (map[string]string, error) {
+func (da SqlDataAccess) doUserGetAdapterIDs(ctx context.Context, username string) (map[string]string, error) {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.doUserGetAdapterIDs")
+	ctx, sp := tr.Start(ctx, "sql.doUserGetAdapterIDs")
 	defer sp.End()
 
 	conn, err := da.connect(ctx)
@@ -649,9 +649,9 @@ func (da PostgresDataAccess) doUserGetAdapterIDs(ctx context.Context, username s
 }
 
 // doUserUpdateAdapterIDs
-func (da PostgresDataAccess) doUserUpdateAdapterIDs(ctx context.Context, user rest.User) error {
+func (da SqlDataAccess) doUserUpdateAdapterIDs(ctx context.Context, user rest.User) error {
 	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
-	ctx, sp := tr.Start(ctx, "postgres.doUserUpdateAdapterIDs")
+	ctx, sp := tr.Start(ctx, "sql.doUserUpdateAdapterIDs")
 	defer sp.End()
 
 	conn, err := da.connect(ctx)

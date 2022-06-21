@@ -25,7 +25,7 @@ import (
 	"github.com/getgort/gort/config"
 	"github.com/getgort/gort/dataaccess/errs"
 	"github.com/getgort/gort/dataaccess/memory"
-	"github.com/getgort/gort/dataaccess/postgres"
+	"github.com/getgort/gort/dataaccess/sql"
 	"github.com/getgort/gort/errors"
 	"github.com/getgort/gort/telemetry"
 
@@ -65,7 +65,7 @@ func getCorrectDataAccess() DataAccess {
 		return memory.NewInMemoryDataAccess()
 	}
 
-	return postgres.NewPostgresDataAccess(dbConfigs)
+	return sql.NewSqlDataAccess(dbConfigs)
 }
 
 // initializeDataAccess is called by monitorConfig to initialize the data
