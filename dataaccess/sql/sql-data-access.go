@@ -38,21 +38,19 @@ const (
 	MySQLDriverName    = "mysql"
 )
 
-type SqlManager interface {
-	Open(host string, port int, user, password, databaseName string, ctx context.Context, sslEnabled bool) (*sql.DB, error)
+type sqlManager interface {
+	openInternal(host string, port int, user, password, databaseName string, ctx context.Context, sslEnabled bool) (*sql.DB, error)
 
-	DatabaseExists(ctx context.Context, conn *sql.Conn, dbName string) (bool, error)
-	TableExists(ctx context.Context, table string, conn *sql.Conn) (bool, error)
+	databaseExists(ctx context.Context, conn *sql.Conn, dbName string) (bool, error)
+	tableExists(ctx context.Context, table string, conn *sql.Conn) (bool, error)
 }
-
-type MySQLManager struct{}
 
 // SqlDataAccess is a data access implementation backed by an sql database.
 type SqlDataAccess struct {
-	configs  data.DatabaseConfigs
-	dbs      map[string]*sql.DB
-	mutex    *sync.Mutex
-	_manager SqlManager
+	configs data.DatabaseConfigs
+	dbs     map[string]*sql.DB
+	mutex   *sync.Mutex
+	sqlManager
 }
 
 // NewSqlDataAccess returns a new SqlDataAccess based on the
@@ -67,12 +65,13 @@ func newSqlDataAccess(configs data.DatabaseConfigs) SqlDataAccess {
 
 func NewPostgresDataAccess(configs data.DatabaseConfigs) SqlDataAccess {
 	sda := newSqlDataAccess(configs)
-	sda._manager = PostgresManager{}
+	sda.sqlManager = newPostgresManager()
 	return sda
 }
 
-func NewMySQLDatAccess(configs data.DatabaseConfigs) SqlDataAccess {
+func NewMySQLDataAccess(configs data.DatabaseConfigs) SqlDataAccess {
 	sda := newSqlDataAccess(configs)
+	sda.sqlManager = newMySQLManager()
 	return sda
 }
 
@@ -107,7 +106,7 @@ func (da SqlDataAccess) initializeAuditData(ctx context.Context) error {
 	defer conn.Close()
 
 	// Check whether the users table exists
-	exists, err := da._manager.TableExists(ctx, "commands", conn)
+	exists, err := da.tableExists(ctx, "commands", conn)
 	if err != nil {
 		return err
 	}
@@ -138,7 +137,7 @@ func (da SqlDataAccess) initializeGortData(ctx context.Context) error {
 	defer conn.Close()
 
 	// Check whether the users table exists
-	exists, err := da._manager.TableExists(ctx, "users", conn)
+	exists, err := da.tableExists(ctx, "users", conn)
 	if err != nil {
 		return err
 	}
@@ -150,7 +149,7 @@ func (da SqlDataAccess) initializeGortData(ctx context.Context) error {
 	}
 
 	// Check whether the user adapter ids table exists
-	if exists, err = da._manager.TableExists(ctx, "user_adapter_ids", conn); err != nil {
+	if exists, err = da.tableExists(ctx, "user_adapter_ids", conn); err != nil {
 		return err
 	} else if !exists {
 		err = da.createUsersAdapterIDsTable(ctx, conn)
@@ -160,7 +159,7 @@ func (da SqlDataAccess) initializeGortData(ctx context.Context) error {
 	}
 
 	// Check whether the groups table exists
-	exists, err = da._manager.TableExists(ctx, "groups", conn)
+	exists, err = da.tableExists(ctx, "groups", conn)
 	if err != nil {
 		return err
 	}
@@ -172,7 +171,7 @@ func (da SqlDataAccess) initializeGortData(ctx context.Context) error {
 	}
 
 	// Check whether the groupusers table exists
-	exists, err = da._manager.TableExists(ctx, "groupusers", conn)
+	exists, err = da.tableExists(ctx, "groupusers", conn)
 	if err != nil {
 		return err
 	}
@@ -184,7 +183,7 @@ func (da SqlDataAccess) initializeGortData(ctx context.Context) error {
 	}
 
 	// Check whether the tokens table exists
-	exists, err = da._manager.TableExists(ctx, "tokens", conn)
+	exists, err = da.tableExists(ctx, "tokens", conn)
 	if err != nil {
 		return err
 	}
@@ -202,7 +201,7 @@ func (da SqlDataAccess) initializeGortData(ctx context.Context) error {
 	}
 
 	// Check whether the bundles_kubernetes table exists
-	exists, err = da._manager.TableExists(ctx, "bundle_kubernetes", conn)
+	exists, err = da.tableExists(ctx, "bundle_kubernetes", conn)
 	if err != nil {
 		return err
 	}
@@ -214,7 +213,7 @@ func (da SqlDataAccess) initializeGortData(ctx context.Context) error {
 	}
 
 	// Check whether the roles table exists
-	exists, err = da._manager.TableExists(ctx, "roles", conn)
+	exists, err = da.tableExists(ctx, "roles", conn)
 	if err != nil {
 		return err
 	}
@@ -226,7 +225,7 @@ func (da SqlDataAccess) initializeGortData(ctx context.Context) error {
 	}
 
 	// Check whether the configs table exists
-	exists, err = da._manager.TableExists(ctx, "configs", conn)
+	exists, err = da.tableExists(ctx, "configs", conn)
 	if err != nil {
 		return err
 	}
@@ -550,7 +549,7 @@ func (da SqlDataAccess) ensureDatabaseExists(ctx context.Context, dbName string)
 	}
 	defer conn.Close()
 
-	exists, err := da._manager.DatabaseExists(ctx, conn, dbName)
+	exists, err := da.databaseExists(ctx, conn, dbName)
 	if err != nil {
 		return err
 	}
@@ -575,7 +574,7 @@ func (da SqlDataAccess) open(ctx context.Context, databaseName string) (*sql.DB,
 		return db, nil
 	}
 
-	db, err := da._manager.Open(da.configs.Host, da.configs.Port, da.configs.User, da.configs.Password,
+	db, err := da.openInternal(da.configs.Host, da.configs.Port, da.configs.User, da.configs.Password,
 		databaseName, ctx, da.configs.SSLEnabled) // TODO oh god the database needs to exist already
 	if err != nil {
 		return nil, gerr.WrapStr(fmt.Sprintf("failed to open database %q", databaseName), err)

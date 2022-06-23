@@ -106,7 +106,7 @@ func TestMySQLDataAccessMain(t *testing.T) {
 	ctx, cancel = context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 
-	da = NewMySQLDatAccess(configs)
+	da = NewMySQLDataAccess(configs)
 
 	t.Run("testInitialize", testInitialize)
 
@@ -323,13 +323,13 @@ func testTablesExist(t *testing.T) {
 
 	// Expects these tables
 	for _, table := range expectedTables {
-		b, err := da._manager.TableExists(ctx, table, conn)
+		b, err := da.tableExists(ctx, table, conn)
 		assert.NoError(t, err)
 		assert.True(t, b)
 	}
 
 	// Expect not to find this one.
-	b, err := da._manager.TableExists(ctx, "doestexist", conn)
+	b, err := da.tableExists(ctx, "doestexist", conn)
 	assert.NoError(t, err)
 	assert.False(t, b)
 }

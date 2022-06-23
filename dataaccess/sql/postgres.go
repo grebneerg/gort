@@ -8,9 +8,13 @@ import (
 	gerr "github.com/getgort/gort/errors"
 )
 
-type PostgresManager struct{}
+type postgresManager struct{}
 
-func (pm PostgresManager) DatabaseExists(ctx context.Context, conn *sql.Conn, dbName string) (bool, error) {
+func newPostgresManager() postgresManager {
+	return postgresManager{}
+}
+
+func (postgresManager) databaseExists(ctx context.Context, conn *sql.Conn, dbName string) (bool, error) {
 	const query = `SELECT datname
 		FROM pg_database
 		WHERE datistemplate = false AND datname = $1`
@@ -38,7 +42,7 @@ func (pm PostgresManager) DatabaseExists(ctx context.Context, conn *sql.Conn, db
 	return false, nil
 }
 
-func (pm PostgresManager) TableExists(ctx context.Context, table string, conn *sql.Conn) (bool, error) {
+func (postgresManager) tableExists(ctx context.Context, table string, conn *sql.Conn) (bool, error) {
 	var result string
 
 	rows, err := conn.QueryContext(ctx, fmt.Sprintf("SELECT to_regclass('public.%s');", table))
@@ -59,10 +63,10 @@ func (pm PostgresManager) TableExists(ctx context.Context, table string, conn *s
 		return false, gerr.Wrap(errs.ErrDataAccess, err)
 	}
 
-	return false, err
+	return false, nil
 }
 
-func (pm PostgresManager) Open(host string, port int, user, password, databaseName string, ctx context.Context, sslEnabled bool) (*sql.DB, error) {
+func (postgresManager) openInternal(host string, port int, user, password, databaseName string, ctx context.Context, sslEnabled bool) (*sql.DB, error) {
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s database=%s",
 		host, port, user,
