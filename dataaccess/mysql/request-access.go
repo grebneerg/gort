@@ -1,0 +1,201 @@
+/*
+ * Copyright 2021 The Gort Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package mysql
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"strings"
+
+	"github.com/getgort/gort/data"
+	"github.com/getgort/gort/dataaccess/errs"
+	gerr "github.com/getgort/gort/errors"
+	"github.com/getgort/gort/telemetry"
+	"go.opentelemetry.io/otel"
+)
+
+func (da MySqlDataAccess) RequestBegin(ctx context.Context, req *data.CommandRequest) error {
+	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
+	ctx, sp := tr.Start(ctx, "mysql.RequestBegin")
+	defer sp.End()
+
+	if req.RequestID != 0 {
+		return fmt.Errorf("command request ID already set")
+	}
+
+	conn, err := da.connect(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	const query = `INSERT INTO commands (bundle_name, bundle_version, command_name,
+		command_executable, command_parameters, adapter, user_id,
+		user_email, channel_id, gort_user_name, timestamp)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		RETURNING request_id;`
+
+	stmt, err := conn.PrepareContext(ctx, query)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	err = stmt.QueryRowContext(ctx,
+		req.Bundle.Name,
+		req.Bundle.Version,
+		req.Command.Name,
+		encodeStringSlice(req.Command.Executable),
+		strings.Join(req.Parameters, " "),
+		req.Adapter,
+		req.UserID,
+		req.UserEmail,
+		req.ChannelID,
+		req.UserName,
+		req.Timestamp).Scan(&req.RequestID)
+	if err != nil {
+		return gerr.Wrap(errs.ErrDataAccess, err)
+	}
+
+	return nil
+}
+
+func (da MySqlDataAccess) RequestError(ctx context.Context, req data.CommandRequest, err error) error {
+	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
+	_, sp := tr.Start(ctx, "mysql.RequestUpdate")
+	defer sp.End()
+
+	return da.RequestClose(ctx, data.NewCommandResponseEnvelope(req, data.WithError("", err, 1)))
+}
+
+func (da MySqlDataAccess) RequestUpdate(ctx context.Context, req data.CommandRequest) error {
+	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
+	ctx, sp := tr.Start(ctx, "mysql.RequestUpdate")
+	defer sp.End()
+
+	if req.RequestID == 0 {
+		return fmt.Errorf("command request ID unset")
+	}
+
+	conn, err := da.connect(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	const query = `UPDATE commands
+		SET bundle_name=?, bundle_version=?, command_name=?,
+			command_executable=?, command_parameters=?, adapter=?, user_id=?,
+			user_email=?, channel_id=?, gort_user_name=?
+		WHERE request_id=?;`
+
+	_, err = conn.ExecContext(ctx, query,
+		req.Bundle.Name,
+		req.Bundle.Version,
+		req.Command.Name,
+		encodeStringSlice(req.Command.Executable),
+		strings.Join(req.Parameters, " "),
+		req.Adapter,
+		req.UserID,
+		req.UserEmail,
+		req.ChannelID,
+		req.UserName,
+		req.RequestID)
+	if err != nil {
+		err = gerr.Wrap(errs.ErrDataAccess, err)
+	}
+
+	return err
+}
+
+func (da MySqlDataAccess) RequestClose(ctx context.Context, envelope data.CommandResponseEnvelope) error {
+	tr := otel.GetTracerProvider().Tracer(telemetry.ServiceName)
+	ctx, sp := tr.Start(ctx, "mysql.RequestClose")
+	defer sp.End()
+
+	if envelope.Request.RequestID == 0 {
+		return fmt.Errorf("command request ID unset")
+	}
+
+	conn, err := da.connect(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	const query = `UPDATE commands
+		SET bundle_name=?, bundle_version=?, command_name=?,
+			command_executable=?, command_parameters=?, adapter=?, user_id=?,
+			user_email=?, channel_id=?, gort_user_name=?, timestamp=?,
+			duration=?, result_status=?, result_error=?
+		WHERE request_id=?;`
+
+	errMsg := ""
+	if envelope.Data.Error != nil {
+		errMsg = envelope.Data.Error.Error()
+	}
+
+	_, err = conn.ExecContext(ctx, query,
+		envelope.Request.Bundle.Name,
+		envelope.Request.Bundle.Version,
+		envelope.Request.Command.Name,
+		encodeStringSlice(envelope.Request.Command.Executable),
+		strings.Join(envelope.Request.Parameters, " "),
+		envelope.Request.Adapter,
+		envelope.Request.UserID,
+		envelope.Request.UserEmail,
+		envelope.Request.ChannelID,
+		envelope.Request.UserName,
+		envelope.Request.Timestamp,
+		envelope.Data.Duration.Milliseconds(),
+		envelope.Data.ExitCode,
+		errMsg,
+		envelope.Request.RequestID)
+	if err != nil {
+		err = gerr.Wrap(errs.ErrDataAccess, err)
+	}
+
+	return err
+}
+
+func (da MySqlDataAccess) createCommandsTable(ctx context.Context, conn *sql.Conn) error {
+	createCommandsQuery := `CREATE TABLE commands(
+		request_id          BIGSERIAL,
+		timestamp           TIMESTAMP WITH TIME ZONE,
+		duration            INT,
+		bundle_name			TEXT NOT NULL,
+		bundle_version		TEXT NOT NULL,
+		command_name		TEXT NOT NULL,
+		command_executable	TEXT NOT NULL,
+	    command_parameters  TEXT NOT NULL,
+		adapter		        TEXT NOT NULL,
+		user_id		        TEXT NOT NULL,
+		user_email		    TEXT NOT NULL,
+		channel_id		    TEXT NOT NULL,
+		gort_user_name      TEXT NOT NULL,
+		result_status		INT,
+		result_error        TEXT
+	);`
+
+	_, err := conn.ExecContext(ctx, createCommandsQuery)
+	if err != nil {
+		return gerr.Wrap(errs.ErrDataAccess, err)
+	}
+
+	return nil
+}

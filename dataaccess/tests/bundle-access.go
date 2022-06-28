@@ -443,6 +443,7 @@ func (da DataAccessTester) testFindCommandEntry(t *testing.T) {
 
 	// Is the loaded bundle correct?
 	fmt.Println(ce)
+	require.NotEmpty(t, ce)
 	assert.Equal(t, tb, ce[0].Bundle)
 
 	tc := tb.Commands[CommandName]

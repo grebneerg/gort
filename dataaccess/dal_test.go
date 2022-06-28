@@ -24,6 +24,7 @@ import (
 
 	"github.com/getgort/gort/config"
 	"github.com/getgort/gort/dataaccess/memory"
+	"github.com/getgort/gort/dataaccess/mysql"
 	"github.com/getgort/gort/dataaccess/postgres"
 )
 
@@ -48,5 +49,14 @@ func TestUsePostgres(t *testing.T) {
 
 	da := getCorrectDataAccess()
 	expected := postgres.NewPostgresDataAccess(config.GetDatabaseConfigs())
+	assert.IsType(t, expected, da)
+}
+
+func TestUseMySQL(t *testing.T) {
+	err := config.Initialize("../testing/config/complete.yml")
+	assert.NoError(t, err)
+
+	da := getCorrectDataAccess()
+	expected := mysql.NewMySQLDataAccess(config.GetDatabaseConfigs())
 	assert.IsType(t, expected, da)
 }
